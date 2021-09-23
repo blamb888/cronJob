@@ -12,6 +12,30 @@ import store from 'store-js';
 import { Redirect } from '@shopify/app-bridge/actions';
 import { Context } from '@shopify/app-bridge-react';
 import ApplyRandomPrices from './ApplyRandomPrices';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import styled from 'styled-components';
+
+// Styling a regular HTML input
+const StyledInput = styled.input`
+  display: inline-block;
+  margin: 24px 8px;
+  padding: 8px;
+  border: 1px solid black;
+  border-radius: 4px;
+  font-size: 16px;
+`;
+
+// Creating a custom hook
+function useInput(defaultValue) {
+  const [value, setValue] = useState(defaultValue);
+  function onChange(e) {
+    setValue(e.target.value);
+  }
+  return {
+    value,
+    onChange,
+  };
+}
 
 // GraphQL query that retrieves products by ID
 const GET_PRODUCTS_BY_ID = gql`
@@ -127,6 +151,10 @@ class ResourceListWithProducts extends React.Component {
                         >
                           <Stack alignment="center">
                             <Stack.Item fill>
+                              <FontAwesomeIcon icon={["fas", "tag"]} />
+                                <StyledInput
+                                  placeholder="Enter new tag name"
+                                />
                               <h3>
                                 <TextStyle variation="strong">
                                   {item.title}
