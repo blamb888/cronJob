@@ -5,15 +5,27 @@ import { Layout, Button, Banner, Toast, Stack, Frame } from '@shopify/polaris';
 import { Context } from '@shopify/app-bridge-react';
 
 // GraphQL mutation that updates the prices of products
-const UPDATE_PRICE = gql`
-  mutation productVariantUpdate($input: ProductVariantInput!) {
-    productVariantUpdate(input: $input) {
+// const UPDATE_PRICE = gql`
+//   mutation productVariantUpdate($input: ProductVariantInput!) {
+//     productVariantUpdate(input: $input) {
+//       product {
+//         title
+//       }
+//       productVariant {
+//         id
+//         price
+//       }
+//     }
+//   }
+// `;
+
+const UPDATE_TAGS = gql`
+  mutation productUpdate($input: ProductInput!) {
+    productUpdate(input: $input) {
       product {
-        title
-      }
-      productVariant {
         id
-        price
+        title
+        tags
       }
     }
   }
@@ -24,7 +36,8 @@ class ApplyRandomPrices extends React.Component {
 
   render() {
     return ( // Uses mutation's input to update product prices
-      <Mutation mutation={UPDATE_PRICE}>
+      // <Mutation mutation={UPDATE_PRICE}>
+        <Mutation mutation={UPDATE_TAGS}>
         {(handleSubmit, {error, data}) => {
           const [hasResults, setHasResults] = useState(false);
 
@@ -53,14 +66,19 @@ class ApplyRandomPrices extends React.Component {
                     textAlign={"center"}
                     onClick={() => {
                       let promise = new Promise((resolve) => resolve());
-                      for (const variantId in this.props.selectedItems) {
-                        const price = Math.random().toPrecision(3) * 10;
-                        const productVariableInput = {
-                          id: this.props.selectedItems[variantId].variants.edges[0].node.id,
-                          price: price,
+                      for (const id in this.props.selectedItems) {
+                        // const price = Math.random().toPrecision(3) * 10;
+                        const tags = "there";
+                        // const productVariableInput = {
+                        //   id: this.props.selectedItems[variantId].variants.edges[0].node.id,
+                        //   price: price,
+                        // };
+                        const productInput = {
+                          id: this.props.selectedItems[id].id,
+                          tags: [`${this.props.selectedItems[id].tags}`, tags]
                         };
 
-                        promise = promise.then(() => handleSubmit({ variables: { input: productVariableInput }}));
+                        promise = promise.then(() => handleSubmit({ variables: { input: productInput }}));
                       }
 
                       if (promise) {
@@ -68,7 +86,7 @@ class ApplyRandomPrices extends React.Component {
                     }}
                   }
                   >
-                    Randomize prices
+                    Add new tag
                   </Button>
                 </Stack>
               </Layout.Section>

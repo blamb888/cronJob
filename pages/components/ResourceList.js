@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Component } from 'react';
 import gql from 'graphql-tag';
 import { Query } from 'react-apollo';
 import {
@@ -12,30 +12,7 @@ import store from 'store-js';
 import { Redirect } from '@shopify/app-bridge/actions';
 import { Context } from '@shopify/app-bridge-react';
 import ApplyRandomPrices from './ApplyRandomPrices';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import styled from 'styled-components';
-
-// Styling a regular HTML input
-const StyledInput = styled.input`
-  display: inline-block;
-  margin: 24px 8px;
-  padding: 8px;
-  border: 1px solid black;
-  border-radius: 4px;
-  font-size: 16px;
-`;
-
-// Creating a custom hook
-function useInput(defaultValue) {
-  const [value, setValue] = useState(defaultValue);
-  function onChange(e) {
-    setValue(e.target.value);
-  }
-  return {
-    value,
-    onChange,
-  };
-}
+import Input from './Input'
 
 // GraphQL query that retrieves products by ID
 const GET_PRODUCTS_BY_ID = gql`
@@ -46,6 +23,7 @@ const GET_PRODUCTS_BY_ID = gql`
         handle
         descriptionHtml
         id
+        tags
         images(first: 1) {
           edges {
             node {
@@ -84,7 +62,7 @@ class ResourceListWithProducts extends React.Component {
 
     // Returns products by ID
     return (
-        <Query query={GET_PRODUCTS_BY_ID} variables={{ ids: store.get('ids') }}>
+      <Query query={GET_PRODUCTS_BY_ID} variables={{ ids: store.get('ids') }}>
           {({ data, loading, error, refetch }) => { // Refetches products by ID
             if (loading) return <div>Loading…</div>;
             if (error) return <div>{error.message}</div>;
@@ -113,21 +91,21 @@ class ResourceListWithProducts extends React.Component {
                     renderItem={item => {
                       const media = (
                         <Thumbnail
-                          source={
-                            item.images.edges[0]
-                              ? item.images.edges[0].node.originalSrc
-                              : ''
-                          }
-                          alt={
-                            item.images.edges[0]
-                              ? item.images.edges[0].node.altText
-                              : ''
-                          }
+                        source={
+                          item.images.edges[0]
+                          ? item.images.edges[0].node.originalSrc
+                          : ''
+                        }
+                        alt={
+                          item.images.edges[0]
+                          ? item.images.edges[0].node.altText
+                          : ''
+                        }
                         />
-                      );
-                      const price = item.variants.edges[0].node.price;
-                      return (
-                        <ResourceList.Item
+                        );
+                        const price = item.variants.edges[0].node.price;
+                        return (
+                          <ResourceList.Item
                           id={item.id}
                           media={media}
                           accessibilityLabel={`View details for ${item.title}`}
@@ -136,25 +114,23 @@ class ResourceListWithProducts extends React.Component {
                             let index = this.state.selectedItems.indexOf(item.id);
                             const node = nodesById[item.id];
                             if (index === -1) {
-                                this.state.selectedItems.push(item.id);
+                              this.state.selectedItems.push(item.id);
                                 this.state.selectedNodes[item.id] = node;
-                            } else {
-                              this.state.selectedItems.splice(index, 1);
+                              } else {
+                                this.state.selectedItems.splice(index, 1);
                                 delete this.state.selectedNodes[item.id];
-                            }
+                              }
 
-                            this.setState({
-                              selectedItems: this.state.selectedItems,
-                              selectedNodes: this.state.selectedNodes,
+                              this.setState({
+                                selectedItems: this.state.selectedItems,
+                                selectedNodes: this.state.selectedNodes,
                               });
-                          }}
-                        >
+                            }}
+                            >
                           <Stack alignment="center">
                             <Stack.Item fill>
-                              <FontAwesomeIcon icon={["fas", "tag"]} />
-                                <StyledInput
-                                  placeholder="Enter new tag name"
-                                />
+                              <Input input={this.state.input} onUpdate={refetch} />
+                              <span>Tags: {`${item.tags}`}</span>
                               <h3>
                                 <TextStyle variation="strong">
                                   {item.title}
@@ -168,7 +144,7 @@ class ResourceListWithProducts extends React.Component {
                         </ResourceList.Item>
                       );
                     }}
-                  />
+                    />
                 </Card>
 
               <ApplyRandomPrices selectedItems={this.state.selectedNodes} onUpdate={refetch} />
