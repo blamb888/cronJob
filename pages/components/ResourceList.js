@@ -12,7 +12,21 @@ import store from 'store-js';
 import { Redirect } from '@shopify/app-bridge/actions';
 import { Context } from '@shopify/app-bridge-react';
 import ApplyRandomPrices from './ApplyRandomPrices';
-import Input from './Input'
+// import Input from './Input'
+
+
+import styled from 'styled-components';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+
+// Styling a regular HTML input
+const StyledInput = styled.input`
+  display: inline-block;
+  margin: 24px 8px;
+  padding: 8px;
+  border: 1px solid black;
+  border-radius: 4px;
+  font-size: 16px;
+`;
 
 // GraphQL query that retrieves products by ID
 const GET_PRODUCTS_BY_ID = gql`
@@ -54,7 +68,20 @@ class ResourceListWithProducts extends React.Component {
     this.state = {
       selectedItems: [],
       selectedNodes: {},
+      tags: ""
     };
+    this.tagNameChange = this.tagNameChange.bind(this);
+  }
+
+  tagNameChange(e) {
+    this.setState({
+      tags: e.target.value
+    });
+  }
+
+  componentDidUpdate(){
+    console.log("resource list...");
+    console.log(this.state.tags);
   }
 
   render() {
@@ -129,7 +156,13 @@ class ResourceListWithProducts extends React.Component {
                             >
                           <Stack alignment="center">
                             <Stack.Item fill>
-                              <Input input={this.state.input} onUpdate={refetch} />
+                              <FontAwesomeIcon icon={["fas", "tag"]} />
+                                <StyledInput
+                                  type="text"
+                                  onChange={this.tagNameChange}
+                                  {...StyledInput.value}
+                                  placeholder="Enter new tag name"
+                                />
                               <span>Tags: {`${item.tags}`}</span>
                               <h3>
                                 <TextStyle variation="strong">
@@ -147,7 +180,7 @@ class ResourceListWithProducts extends React.Component {
                     />
                 </Card>
 
-              <ApplyRandomPrices selectedItems={this.state.selectedNodes} onUpdate={refetch} />
+              <ApplyRandomPrices selectedItems={this.state.selectedNodes} onUpdate={refetch} tags={this.state.tags} />
             </>
           );
         }}

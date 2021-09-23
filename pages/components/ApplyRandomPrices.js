@@ -68,7 +68,7 @@ class ApplyRandomPrices extends React.Component {
                       let promise = new Promise((resolve) => resolve());
                       for (const id in this.props.selectedItems) {
                         // const price = Math.random().toPrecision(3) * 10;
-                        const tags = "there";
+                        const tags = this.props.tags;
                         // const productVariableInput = {
                         //   id: this.props.selectedItems[variantId].variants.edges[0].node.id,
                         //   price: price,

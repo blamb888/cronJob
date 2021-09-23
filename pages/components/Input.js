@@ -1,4 +1,4 @@
-import React, { Component, createContext } from 'react';
+import React, { Component, createContext, useState } from 'react';
 import styled from 'styled-components';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
@@ -13,14 +13,33 @@ const StyledInput = styled.input`
 `;
 
 class Input extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      tag: ""
+    };
+    this.tagNameChange = this.tagNameChange.bind(this);
+  }
+
+  tagNameChange(e) {
+    this.setState({
+      tag: e.target.value
+    });
+  }
+
+  componentDidUpdate(){
+    console.log(this.state);
+  }
+
   render() {
     return (
       <div>
         <FontAwesomeIcon icon={["fas", "tag"]} />
-        <StyledInput
-          value={this.props.tag}
-          onChange={this.props.onChange}
-          placeholder="Enter new tag name"
+          <StyledInput
+            type="text"
+            onChange={this.tagNameChange}
+            {...StyledInput.value}
+            placeholder="Enter new tag name"
           />
       </div>
     );
@@ -28,4 +47,3 @@ class Input extends Component {
 }
 
 export default Input;
-export {StyledInput};
