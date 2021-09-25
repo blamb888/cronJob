@@ -1,24 +1,23 @@
-import React from 'react';
-import gql from 'graphql-tag';
-import { Mutation } from 'react-apollo';
+import React from "react";
+import gql from "graphql-tag";
+import { Mutation } from "react-apollo";
 import { Page, Layout, EmptyState, Button, Card } from "@shopify/polaris";
-import { ResourcePicker, TitleBar } from '@shopify/app-bridge-react';
-import store from 'store-js';
-import ResourceListWithProducts from './components/ResourceList';
+import { ResourcePicker, TitleBar } from "@shopify/app-bridge-react";
+import store from "store-js";
+import ResourceListWithProducts from "./components/ResourceList";
 
-
-const img = 'https://cdn.shopify.com/s/files/1/0757/9955/files/empty-state.svg';
+const img = "https://cdn.shopify.com/s/files/1/0757/9955/files/empty-state.svg";
 
 class Index extends React.Component {
   state = { open: false };
   render() {
     // A constant that defines your app's empty state
-    const emptyState = !store.get('ids');
+    const emptyState = !store.get("ids");
     return (
       <Page>
         <TitleBar
           primaryAction={{
-            content: 'Select products',
+            content: "Select products",
             onAction: () => this.setState({ open: true }),
           }}
         />
@@ -34,7 +33,7 @@ class Index extends React.Component {
             <EmptyState
               heading="Discount your products temporarily"
               action={{
-                content: 'Select products',
+                content: "Select products",
                 onAction: () => this.setState({ open: true }),
               }}
               image={img}
@@ -52,9 +51,8 @@ class Index extends React.Component {
   handleSelection = (resources) => {
     const idsFromResources = resources.selection.map((product) => product.id);
     this.setState({ open: false });
-    store.set('ids', idsFromResources);
+    store.set("ids", idsFromResources);
   };
 }
-
 
 export default Index;
