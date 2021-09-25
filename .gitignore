@@ -25,4 +25,5 @@ logs
 config/tunnel.pid
 
 # next build output
-.next/
+.next/*
+package-lock.json
