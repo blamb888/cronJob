@@ -11,10 +11,7 @@ import {
 import store from 'store-js';
 import { Redirect } from '@shopify/app-bridge/actions';
 import { Context } from '@shopify/app-bridge-react';
-import ApplyRandomPrices from './ApplyRandomPrices';
-// import Input from './Input'
-
-
+import AddNewTag from './AddNewTag';
 import styled from 'styled-components';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
@@ -180,7 +177,7 @@ class ResourceListWithProducts extends React.Component {
                     />
                 </Card>
 
-              <ApplyRandomPrices selectedItems={this.state.selectedNodes} onUpdate={refetch} tags={this.state.tags} />
+              <AddNewTag selectedItems={this.state.selectedNodes} onUpdate={refetch} tags={this.state.tags} />
             </>
           );
         }}
