@@ -1,80 +1,106 @@
-require("isomorphic-fetch");
-const dotenv = require("dotenv");
-dotenv.config();
-const Koa = require("koa");
-const next = require("next");
-const { default: createShopifyAuth } = require("@shopify/koa-shopify-auth");
-const { verifyRequest } = require("@shopify/koa-shopify-auth");
-const session = require("koa-session");
-const { default: graphQLProxy } = require("@shopify/koa-shopify-graphql-proxy");
-const { ApiVersion } = require("@shopify/koa-shopify-graphql-proxy");
-const Router = require("koa-router");
-const {
-  receiveWebhook,
-  registerWebhook,
-} = require("@shopify/koa-shopify-webhooks");
-const getSubscriptionUrl = require("./server/getSubscriptionUrl");
+import "@babel/polyfill";
+import dotenv from "dotenv";
+import "isomorphic-fetch";
+import createShopifyAuth, { verifyRequest } from "@shopify/koa-shopify-auth";
+import Shopify, { ApiVersion } from "@shopify/shopify-api";
+import Koa from "koa";
+import next from "next";
+import Router from "koa-router";
 
-const port = parseInt(process.env.PORT, 10) || 3000;
+dotenv.config();
+const port = parseInt(process.env.PORT, 10) || 8081;
 const dev = process.env.NODE_ENV !== "production";
-const app = next({ dev });
+const app = next({
+  dev,
+});
 const handle = app.getRequestHandler();
 
-const { SHOPIFY_API_SECRET_KEY, SHOPIFY_API_KEY, HOST } = process.env;
+Shopify.Context.initialize({
+  API_KEY: process.env.SHOPIFY_API_KEY,
+  API_SECRET_KEY: process.env.SHOPIFY_API_SECRET,
+  SCOPES: process.env.SCOPES.split(","),
+  HOST_NAME: process.env.HOST.replace(/https:\/\//, ""),
+  API_VERSION: ApiVersion.October20,
+  IS_EMBEDDED_APP: true,
+  // This should be replaced with your preferred storage strategy
+  SESSION_STORAGE: new Shopify.Session.MemorySessionStorage(),
+});
 
-app.prepare().then(() => {
+// Storing the currently active shops in memory will force them to re-login when your server restarts. You should
+// persist this object in your app.
+const ACTIVE_SHOPIFY_SHOPS = {};
+
+app.prepare().then(async () => {
   const server = new Koa();
   const router = new Router();
-  server.use(session({ sameSite: "none", secure: true }, server));
-  server.keys = [SHOPIFY_API_SECRET_KEY];
-
+  server.keys = [Shopify.Context.API_SECRET_KEY];
   server.use(
     createShopifyAuth({
-      apiKey: SHOPIFY_API_KEY,
-      secret: SHOPIFY_API_SECRET_KEY,
-      scopes: ["read_products", "write_products"],
       async afterAuth(ctx) {
-        const { shop, accessToken } = ctx.session;
-        ctx.cookies.set("shopOrigin", shop, {
-          httpOnly: false,
-          secure: true,
-          sameSite: "none",
-        });
-        const registration = await registerWebhook({
-          address: `${HOST}/webhooks/products/create`,
-          topic: "PRODUCTS_CREATE",
-          accessToken,
+        // Access token and shop available in ctx.state.shopify
+        const { shop, accessToken, scope } = ctx.state.shopify;
+        const host = ctx.query.host;
+        ACTIVE_SHOPIFY_SHOPS[shop] = scope;
+
+        const response = await Shopify.Webhooks.Registry.register({
           shop,
-          apiVersion: ApiVersion.July20,
+          accessToken,
+          path: "/webhooks",
+          topic: "APP_UNINSTALLED",
+          webhookHandler: async (topic, shop, body) =>
+            delete ACTIVE_SHOPIFY_SHOPS[shop],
         });
 
-        if (registration.success) {
-          console.log("Successfully registered webhook!");
-        } else {
-          console.log("Failed to register webhook", registration.result);
+        if (!response.success) {
+          console.log(
+            `Failed to register APP_UNINSTALLED webhook: ${response.result}`
+          );
         }
-        await getSubscriptionUrl(ctx, accessToken, shop);
+
+        // Redirect to app with shop parameter upon auth
+        ctx.redirect(`/?shop=${shop}&host=${host}`);
       },
     })
   );
 
-  const webhook = receiveWebhook({ secret: SHOPIFY_API_SECRET_KEY });
-
-  router.post("/webhooks/products/create", webhook, (ctx) => {
-    console.log("received webhook: ", ctx.state.webhook);
-  });
-
-  server.use(graphQLProxy({ version: ApiVersion.July20 }));
-
-  router.get("(.*)", verifyRequest(), async (ctx) => {
+  const handleRequest = async (ctx) => {
     await handle(ctx.req, ctx.res);
     ctx.respond = false;
     ctx.res.statusCode = 200;
+  };
+
+  router.post("/webhooks", async (ctx) => {
+    try {
+      await Shopify.Webhooks.Registry.process(ctx.req, ctx.res);
+      console.log(`Webhook processed, returned status code 200`);
+    } catch (error) {
+      console.log(`Failed to process webhook: ${error}`);
+    }
+  });
+
+  router.post(
+    "/graphql",
+    verifyRequest({ returnHeader: true }),
+    async (ctx, next) => {
+      await Shopify.Utils.graphqlProxy(ctx.req, ctx.res);
+    }
+  );
+
+  router.get("(/_next/static/.*)", handleRequest); // Static content is clear
+  router.get("/_next/webpack-hmr", handleRequest); // Webpack content is clear
+  router.get("(.*)", async (ctx) => {
+    const shop = ctx.query.shop;
+
+    // This shop hasn't been seen yet, go through OAuth to create a session
+    if (ACTIVE_SHOPIFY_SHOPS[shop] === undefined) {
+      ctx.redirect(`/auth?shop=${shop}`);
+    } else {
+      await handleRequest(ctx);
+    }
   });
 
   server.use(router.allowedMethods());
   server.use(router.routes());
-
   server.listen(port, () => {
     console.log(`> Ready on http://localhost:${port}`);
   });
