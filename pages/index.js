@@ -31,14 +31,14 @@ class Index extends React.Component {
         {emptyState ? ( // Controls the layout of your app's empty state
           <Layout>
             <EmptyState
-              heading="Discount your products temporarily"
+              heading="Let's add some tags!"
               action={{
                 content: "Select products",
                 onAction: () => this.setState({ open: true }),
               }}
               image={img}
             >
-              <p>Select products to change their price temporarily.</p>
+              <p>Select products to add insightful tags to.</p>
             </EmptyState>
           </Layout>
         ) : (
